@@ -4,7 +4,7 @@ from datetime import date, timedelta
 WINDOW = 7
 PROJECT_STEPS = 7
 
-def load_series(path="data/series.csv"):
+def load_series(path):
     with open(path) as f:
         rows = []
         for r in csv.DictReader(f):
@@ -78,11 +78,11 @@ def linear_trend_projection(days, values, start, steps=PROJECT_STEPS):
         })
     return projection, slope
 
-def main():
-    raw = load_series()
+def analyze_series(location, path):
+    raw = load_series(path)
     cleaned, gap_ranges, start = clean_series(raw)
 
-    print(f"Loaded {len(raw)} real daily CO2 readings "
+    print(f"\n{location}: loaded {len(raw)} real daily CO2 readings "
           f"({raw[0]['date']} to {raw[-1]['date']}).")
     if gap_ranges:
         for seg_start, seg_end in gap_ranges:
@@ -119,11 +119,9 @@ def main():
         "90 summer/autumn days should NOT be extrapolated across season boundaries. "
         "Trust this projection only a few days out."
     )
-    print(f"\nHonesty note: {honest_note}")
+    print(f"Honesty note: {honest_note}")
 
-    output = {
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "unit": "ppm",
+    return {
         "raw": [{"day": c["day"], "date": c["date"], "value": c["value"]} for c in cleaned],
         "gaps": [
             {"start_day": s, "end_day": e,
@@ -136,6 +134,20 @@ def main():
         "projection": projection,
         "trend_slope_per_day": round(slope, 4),
         "honest_note": honest_note,
+    }
+
+def main():
+    locations = {
+        "Le Mans": "data/le_mans_series.csv",
+        "Paris": "data/paris_series.csv",
+    }
+    output = {
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "unit": "ppm",
+        "locations": {
+            location: analyze_series(location, path)
+            for location, path in locations.items()
+        },
     }
     with open("docs/data/series_analysis.json", "w") as f:
         json.dump(output, f, indent=2)

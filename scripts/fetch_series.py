@@ -7,13 +7,16 @@ import requests
 # least 90 days, confirmed by real testing) -- no need to wait weeks for a
 # scheduled pipeline to accumulate data, unlike this course's other real-time-
 # history projects (TD2, TP2).
-LAT, LON = 48.0061, 0.1996  # Le Mans
+LOCATIONS = {
+    "Le Mans": (48.0061, 0.1996),
+    "Paris": (48.8566, 2.3522),
+}
 PAST_DAYS = 90
 URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
-def fetch_hourly_co2(retries=4, backoff=5):
+def fetch_hourly_co2(latitude, longitude, retries=4, backoff=5):
     params = {
-        "latitude": LAT, "longitude": LON,
+        "latitude": latitude, "longitude": longitude,
         "hourly": "carbon_dioxide",
         "past_days": PAST_DAYS,
         "forecast_days": 0,
@@ -54,27 +57,35 @@ def aggregate_to_daily(times, values):
     return rows
 
 def main():
-    print(f"Fetching {PAST_DAYS} days of real hourly CO2 (ppm) for Le Mans "
-          f"({LAT}, {LON}) from Open-Meteo Air Quality API...")
-    data = fetch_hourly_co2()
-    times = data["hourly"]["time"]
-    values = data["hourly"]["carbon_dioxide"]
-    print(f"Received {len(times)} real hourly readings "
-          f"({times[0]} to {times[-1]})")
-
-    rows = aggregate_to_daily(times, values)
-    incomplete = [r for r in rows if r["n_hours_observed"] < 24]
-    print(f"Aggregated to {len(rows)} daily values -- "
-          f"{len(incomplete)} day(s) with fewer than 24 real hourly readings")
-    for r in incomplete:
-        print(f"  incomplete day: {r['date']} ({r['n_hours_observed']}/24 hours)")
-
     os.makedirs("data", exist_ok=True)
-    with open("data/series.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["date", "co2_ppm", "n_hours_observed"])
-        w.writeheader()
-        w.writerows(rows)
-    print(f"Wrote data/series.csv ({len(rows)} days)")
+    fetched_series = {}
+    for location, (latitude, longitude) in LOCATIONS.items():
+        print(f"Fetching {PAST_DAYS} days of real hourly CO2 (ppm) for {location} "
+              f"({latitude}, {longitude}) from Open-Meteo Air Quality API...")
+        data = fetch_hourly_co2(latitude, longitude)
+        times = data["hourly"]["time"]
+        values = data["hourly"]["carbon_dioxide"]
+        print(f"Received {len(times)} real hourly readings "
+              f"({times[0]} to {times[-1]})")
+
+        rows = aggregate_to_daily(times, values)
+        incomplete = [r for r in rows if r["n_hours_observed"] < 24]
+        print(f"Aggregated to {len(rows)} daily values -- "
+              f"{len(incomplete)} day(s) with fewer than 24 real hourly readings")
+        for r in incomplete:
+            print(f"  incomplete day: {r['date']} ({r['n_hours_observed']}/24 hours)")
+        fetched_series[location] = rows
+
+    for location, rows in fetched_series.items():
+        filename = location.lower().replace(" ", "_") + "_series.csv"
+        path = os.path.join("data", filename)
+        with open(path, "w", newline="") as f:
+            w = csv.DictWriter(
+                f, fieldnames=["date", "co2_ppm", "n_hours_observed"], lineterminator="\n"
+            )
+            w.writeheader()
+            w.writerows(rows)
+        print(f"Wrote {path} ({len(rows)} days)")
 
 if __name__ == "__main__":
     main()

@@ -15,7 +15,8 @@ td-time-series/
     fetch_series.py                 # real: pulls 90 days of real hourly CO2 from Open-Meteo
     analyze_series.py               # clean, smooth, project
   data/
-    series.csv                      # generated + committed by the Action -- real daily CO2 (ppm)
+    le_mans_series.csv              # generated + committed by the Action -- real daily CO2 (ppm)
+    paris_series.csv                # second location for the Stage 6 comparison
   docs/                             # GitHub Pages source
     index.html
     data/
@@ -576,10 +577,9 @@ a recipe.*
 
 Two independent extensions — do either or both:
 
-1. **Change `LAT, LON`** in `fetch_series.py` to a different real place (your
-   hometown, a place you're curious about) and compare: is the trend direction and
-   magnitude similar to Le Mans', or different? A genuinely different climate/season
-   timing could show a different pattern.
+1. **Add a second location** in `fetch_series.py` (for example, Paris) and compare
+   it with Le Mans: is the trend direction and magnitude similar, or different?
+   Keep both datasets so the dashboard can show the comparison.
 2. **Change the `hourly` parameter** to a different Open-Meteo Air Quality variable
    (check [the docs](https://open-meteo.com/en/docs/air-quality-api) for the current
    list — `pm2_5`, `pm10`, `nitrogen_dioxide`, `ozone`, and others are available the
@@ -587,16 +587,14 @@ Two independent extensions — do either or both:
    pipeline don't care which variable they're fed — only the field name and unit need
    updating, the cleaning/smoothing/projection logic is unchanged.
 
-> **Reflection 7.** You changed one line (a location or a variable) and the entire
-> pipeline — cleaning, smoothing, projection, dashboard — kept working with no other
-> changes needed. Why was that possible? Point to the specific reason in
-> `analyze_series.py`'s own functions (what do they NOT mention, that let them stay
-> generic?).
+> **Reflection 7.** You added Paris alongside Le Mans and the pipeline — cleaning,
+> smoothing, projection, dashboard — works for both. Why was that possible? Point
+> to the specific reason in `analyze_series.py`'s own functions (what do they NOT
+> mention, that lets them stay generic?).
 
 **What "done" looks like:**
 
-- [ ] A working dashboard for your chosen location and/or variable, real data, real
-      trend.
+- [ ] A working dashboard comparing both locations, with real data and trends.
 - [ ] Reflection 7 answered in `REFLECTIONS.md`.
 
 ## Reflection checklist — what `REFLECTIONS.md` should contain
@@ -620,11 +618,12 @@ Two independent extensions — do either or both:
 
 - [ ] Repository public, workflow permissions read/write.
 - [ ] All files present: `scripts/fetch_series.py`, `scripts/analyze_series.py`,
-      `data/series.csv`, `docs/data/series_analysis.json`, `docs/index.html`,
+      `data/le_mans_series.csv`, `data/paris_series.csv`,
+      `docs/data/series_analysis.json`, `docs/index.html`,
       `.github/workflows/update_series.yml`, `REFLECTIONS.md`.
 - [ ] At least one green run visible in the Actions tab.
-- [ ] GitHub Pages live, dashboard shows the four-series chart, real dates, and the
-      honesty note.
+- [ ] GitHub Pages live, dashboard shows four series per location, real dates, and
+      the honesty notes.
 - [ ] Stage 6 extension attempted (different location or variable).
 - [ ] All 7 reflections answered in `REFLECTIONS.md`.
 
